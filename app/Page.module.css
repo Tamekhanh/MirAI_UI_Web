@@ -1,0 +1,47 @@
+/* Page.module.css */
+.mainContainer {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden; /* Ngăn cuộn trang chính */
+  background: #1a1a1a; /* Thêm màu nền */
+}
+
+.avatarContainer {
+  flex: 1; /* Cho phép avatar chiếm phần lớn không gian */
+  height: 100%;
+  min-width: 300px;
+}
+
+.chatContainer {
+  /* Desktop: Sidebar */
+  flex-basis: 400px; /* Độ rộng cơ bản */
+  max-width: 500px; /* Độ rộng tối đa */
+  height: 100%;
+  flex-shrink: 0; /* Không co lại */
+  border-left: 1px solid #333;
+  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Media Query cho thiết bị di động (Mobile-first) */
+@media (max-width: 768px) {
+  .mainContainer {
+    flex-direction: column; /* Xếp chồng lên nhau */
+  }
+
+  .avatarContainer {
+    flex: 1; /* Chiếm 1 phần */
+    height: 50vh; /* 50% chiều cao */
+    width: 100%;
+  }
+
+  .chatContainer {
+    flex: 1; /* Chiếm 1 phần */
+    height: 50vh; /* 50% chiều cao */
+    width: 100%;
+    flex-basis: auto; /* Reset độ rộng cơ bản */
+    max-width: 100%;
+    border-left: none; /* Bỏ đường viền */
+    border-top: 1px solid #333;
+  }
+}
