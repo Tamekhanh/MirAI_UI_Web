@@ -1,8 +1,10 @@
-// ChatBox.jsx
 "use client";
 import { useState, useRef, useEffect } from "react";
 import axios from "axios";
-import styles from "./ChatBox.module.css"; // Sử dụng CSS Modules
+import styles from "./ChatBox.module.css";
+
+// MỚI: Định nghĩa URL của server
+const SERVER_URL = "http://localhost:8000";
 
 export default function ChatBox({ onEmotionChange }) {
   const [input, setInput] = useState("");
@@ -25,11 +27,13 @@ export default function ChatBox({ onEmotionChange }) {
     setInput(""); // Xóa input ngay lập tức để UX tốt hơn
 
     try {
-      const res = await axios.post("http://localhost:8000/api/chat", {
+      const res = await axios.post(`${SERVER_URL}/api/chat`, {
         message: input,
       });
-      const reply = res.data.reply;
       
+      const reply = res.data.reply;
+      const audioFile = res.data.audio_file; // MỚI: Nhận file âm thanh
+
       // 1. Phân tích cảm xúc
       const emotion =
         reply.includes("[smile]") ? "smile" :
@@ -45,9 +49,23 @@ export default function ChatBox({ onEmotionChange }) {
       // 4. Cập nhật tin nhắn của bot
       setMessages((prev) => [...prev, { role: "bot", content: cleanReply }]);
 
+      // 5. MỚI: Phát file âm thanh
+      if (audioFile) {
+        // Tạo URL đầy đủ để truy cập file âm thanh
+        const audioUrl = `${SERVER_URL}${audioFile}`;
+        
+        // Tạo một đối tượng Audio và phát nó
+        const audio = new Audio(audioUrl);
+        
+        audio.play().catch(error => {
+          // Xử lý lỗi nếu trình duyệt chặn phát
+          console.warn("Lỗi phát âm thanh:", error);
+        });
+      }
+
     } catch (error) {
-      console.error("Lỗi khi gửi tin nhắn:", error);
-      setMessages((prev) => [...prev, { role: "bot", content: "Oops, có lỗi xảy ra. Bạn thử lại nhé." }]);
+      console.error("Error when sending message:", error);
+      setMessages((prev) => [...prev, { role: "bot", content: "Oops, there was an error. Please try again later." }]);
     }
   };
 
@@ -65,14 +83,16 @@ export default function ChatBox({ onEmotionChange }) {
         {/* Tin nhắn chào mừng mặc định */}
         {messages.length === 0 && (
           <div className={styles.welcomeMessage}>
-            Bắt đầu cuộc trò chuyện với Mirai!
+            Start chatting with Mirai AI! Ask me anything.
           </div>
         )}
         
         {/* Render tin nhắn */}
         {messages.map((msg, i) => (
+          // MỚI: Áp dụng style cho message và vai trò (user/bot)
           <div key={i} className={`${styles.message} ${styles[msg.role]}`}>
-            <div className={styles.bubble}>
+            {/* MỚI: Áp dụng style cho bubble và bubble theo vai trò */}
+            <div className={`${styles.bubble} ${msg.role === 'user' ? styles.userBubble : styles.botBubble}`}>
               {msg.content}
             </div>
           </div>
@@ -83,12 +103,13 @@ export default function ChatBox({ onEmotionChange }) {
 
       <div className={styles.inputContainer}>
         <input
+          className={styles.input} // MỚI: Thêm style
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={handleKeyPress}
           placeholder="Nhập tin nhắn..."
         />
-        <button onClick={sendMessage}>Gửi</button>
+        <button className={styles.button} onClick={sendMessage}>Send</button>
       </div>
     </div>
   );

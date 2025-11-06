@@ -1,0 +1,110 @@
+.container {
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 0px;
+  position: relative; /* ensure absolute children are positioned relative to this container */
+  
+  /* === CHỈNH SỬA PHẦN NÀY === */
+  /* background: transparent; */ /* Thay thế dòng này... */
+  background: url('/Background.png'); /* ...bằng dòng này */
+  background-size: cover;
+  background-position: center;
+
+  border: black 5px solid;
+  border-radius: 12px;
+  /* === KẾT THÚC CHỈNH SỬA === */
+}
+
+.card {
+  width: 100%;
+  max-width: 520px;
+  max-height: 92%;
+  border: 1px solid rgba(6,182,164,0.07);
+  border-radius: 14px;
+  /* box-shadow: 0 12px 36px rgba(2,6,23,0.6); */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.emojiContainer{
+  /* Position the emoji absolutely inside the component container
+     so it won't be positioned relative to the whole page. */
+  position: relative;
+  bottom: 0px;
+  left: 0px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.media {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  max-height: 68vh;
+  background: transparent;
+
+  /* === THÊM 2 DÒNG NÀY ĐỂ NGĂN TẢI ẢNH === */
+  pointer-events: none; /* Vô hiệu hóa mọi sự kiện chuột (nhấp, kéo, chuột phải) */
+  user-select: none;    /* Ngăn người dùng bôi đen hoặc chọn ảnh */
+}
+
+.meta {
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.title {
+  color: #cfeee9;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.subtitle {
+  color: #9fb3d6;
+  font-size: 13px;
+}
+
+.controls {
+  display: flex;
+  gap: 8px;
+}
+
+.btn {
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+  color: #e6eef8;
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.credit {
+  padding: 10px 14px 16px;
+  color: #7f9bb3;
+  font-size: 12px;
+}
+
+@media (max-width: 520px) {
+  .container { padding: 12px; }
+  .title { font-size: 15px; }
+  .media { max-height: 40vh; }
+}

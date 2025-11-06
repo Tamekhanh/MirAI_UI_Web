@@ -4,14 +4,14 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  background: #2a2a2a; /* Nền chatbox tối hơn */
-  color: white;
+  background: transparent; /* parent provides card background */
+  color: #dbeef0; /* softer text */
 }
 
 .messages {
   flex: 1; /* Chiếm toàn bộ không gian còn lại */
   overflow-y: auto; /* Chỉ cuộn khi cần */
-  padding: 20px;
+  padding: 20px 20px 24px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -25,7 +25,7 @@
 
 .welcomeMessage {
   text-align: center;
-  color: #888;
+  color: #8aa9ad;
   font-style: italic;
   padding: 40px 0;
 }
@@ -33,71 +33,72 @@
 .message {
   display: flex;
   max-width: 80%; /* Tin nhắn không nên quá dài */
+  border-radius: 14px;
 }
 
 .bubble {
-  padding: 12px 16px;
-  border-radius: 18px;
+  padding: 8px 16px;
+  border-radius: 14px;
   line-height: 1.5;
-  font-size: 16px;
+  font-size: 15.5px;
+  box-shadow: 0 2px 6px rgba(2,6,23,0.4);
 }
 
 /* Tin nhắn của người dùng */
 .user {
   align-self: flex-end; /* Căn phải */
-}
-.user .bubble {
-  background-color: #007bff; /* Màu xanh dương */
+  background-color: #059669; /* teal-green */
   color: white;
-  border-bottom-right-radius: 4px; /* Tạo "đuôi" */
+  border-bottom-right-radius: 6px; /* slight tail */
 }
+/* .user .bubble đã được gộp vào .user ở trên */
+
 
 /* Tin nhắn của bot */
 .bot {
   align-self: flex-start; /* Căn trái */
+  background-color: rgba(255,255,255,0.03); /* soft dark */
+  color: #e6eef8;
+  border-bottom-left-radius: 6px; /* slight tail */
 }
-.bot .bubble {
-  background-color: #444; /* Màu xám */
-  color: white;
-  border-bottom-left-radius: 4px; /* Tạo "đuôi" */
-}
+/* .bot .bubble đã được gộp vào .bot ở trên */
 
 
 /* Khu vực input */
 .inputContainer {
   display: flex;
-  padding: 16px;
+  padding: 14px;
   gap: 10px;
-  background: #333;
-  border-top: 1px solid #444;
+  background: rgba(255,255,255,0.02);
+  border-top: 1px solid rgba(255,255,255,0.03);
   flex-shrink: 0; /* Không co lại */
 }
 
-.inputContainer input {
+.input { /* Đổi từ .inputContainer input */
   flex: 1;
   padding: 12px;
-  border-radius: 20px;
-  border: 1px solid #555;
-  background: #2a2a2a;
-  color: white;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.04);
+  background: rgba(6,8,12,0.5);
+  color: #dbeef0;
   font-size: 16px;
   outline: none;
 }
-.inputContainer input:focus {
-  border-color: #007bff;
+.input:focus { /* Đổi từ .inputContainer input:focus */
+  border-color: rgba(6,182,164,0.6);
 }
 
-.inputContainer button {
-  padding: 12px 20px;
-  border-radius: 20px;
+.button { /* Đổi từ .inputContainer button */
+  padding: 12px 18px;
+  border-radius: 18px;
   border: none;
-  background-color: #007bff;
+  background-color: #059669;
   color: white;
-  font-size: 16px;
-  font-weight: bold;
+  font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.12s;
 }
-.inputContainer button:hover {
-  background-color: #0056b3;
+.button:hover { /* Đổi từ .inputContainer button:hover */
+  background-color: #047857;
 }
