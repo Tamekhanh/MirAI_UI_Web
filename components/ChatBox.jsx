@@ -6,7 +6,7 @@ import styles from "./ChatBox.module.css";
 // MỚI: Định nghĩa URL của server
 const SERVER_URL = "http://localhost:8000";
 
-export default function ChatBox({ onEmotionChange }) {
+export default function ChatBox({ onEmotionChange, isTalking }) {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]);
   
@@ -29,6 +29,7 @@ export default function ChatBox({ onEmotionChange }) {
     try {
       const res = await axios.post(`${SERVER_URL}/api/chat`, {
         message: input,
+        isTalking: isTalking,
       });
       
       const reply = res.data.reply;
@@ -50,7 +51,7 @@ export default function ChatBox({ onEmotionChange }) {
       setMessages((prev) => [...prev, { role: "bot", content: cleanReply }]);
 
       // 5. MỚI: Phát file âm thanh
-      if (audioFile) {
+      if (audioFile && isTalking) {
         // Tạo URL đầy đủ để truy cập file âm thanh
         const audioUrl = `${SERVER_URL}${audioFile}`;
         
@@ -107,7 +108,7 @@ export default function ChatBox({ onEmotionChange }) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={handleKeyPress}
-          placeholder="Nhập tin nhắn..."
+          placeholder="Ask Mirai AI..."
         />
         <button className={styles.button} onClick={sendMessage}>Send</button>
       </div>

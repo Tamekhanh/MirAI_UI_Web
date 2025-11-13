@@ -71,3 +71,20 @@
   justify-content: space-between;
   align-items: center;
 }
+
+.talkButton {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #10b981; /* Màu xanh lá cây khi bật */
+  border: none;
+  cursor: pointer;
+}
+.muteButton {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #ef4444; /* Màu đỏ khi tắt */
+  border: none;
+  cursor: pointer;
+}
