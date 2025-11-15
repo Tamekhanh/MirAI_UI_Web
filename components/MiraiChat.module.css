@@ -1,5 +1,5 @@
 /* Page.module.css */
-.mainContainer {
+.mainContainer, .MiraiChatContainer {
   display: flex;
   width: 100vw;
   height: 100vh;
@@ -7,7 +7,18 @@
   background: linear-gradient(180deg,#061022 0%, #071229 100%);
   gap: 18px;
   align-items: stretch;
+}
+
+.Menu {
+  display: flex;
+  gap: 8px;
+}
+
+.MiraiChatContainer {
   padding: 18px;
+  flex: 1; /* Chiếm toàn bộ không gian còn lại */
+  display: flex;
+
 }
 
 .avatarContainer {

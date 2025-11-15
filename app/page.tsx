@@ -94,6 +94,6 @@ export default function Page() {
 
   // Nếu ĐÃ sẵn sàng, hiển thị app chính của bạn
   return (
-    <MiraiChat setEmotion={setEmotion} />
+    <MiraiChat setEmotion={setEmotion} isDebug={DEBUG_MODE} />
   );
 }

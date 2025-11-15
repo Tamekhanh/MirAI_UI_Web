@@ -4,31 +4,59 @@ import axios from "axios";
 import ChatBox from "../components/ChatBox";
 import styles from "./MiraiChat.module.css";
 import Avatar2D from "./Avatar/Avatar2D";
+import LoginPage from "./LoginScreen/Login";
+import Avatar3D from "./Avatar/Avatar3D";
 
-export default function MiraiChat({ setEmotion }) {
+export default function MiraiChat({ setEmotion, isDebug }) {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isTalking, setIsTalking] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
+
+  const handleLogin = () => {
+    setIsLoggedIn(true);
+  };
+
+  const handleGuestLogin = () => {
+    setIsGuest(true);
+  };
+
   return (
     <main className={styles.mainContainer}>
-      <div className={styles.avatarContainer}>
-        <Avatar2D />
-      </div>
-      <div className={styles.chatContainer}>
-        <div className={styles.chatHeader}>
-          <h2>MirAI Chat</h2>
-          {/* Button với icon mic */}
-          <div
-            className={styles.micButton}
-            onClick={() => setIsTalking(!isTalking)}
-          >
-            {isTalking ? (
-              <i className="material-icons" style={{ cursor: 'pointer', userSelect: 'none' }}>volume_up</i>
-            ) : (
-              <i className="material-icons" style={{ cursor: 'pointer', userSelect: 'none' }}>volume_mute</i>
-            )}
+      {isLoggedIn || isDebug ? (
+        <div className={styles.MiraiChatContainer}>
+          <div className={styles.avatarContainer}>
+            <Avatar2D />
+          </div>
+          <div className={styles.chatContainer}>
+            <div className={styles.chatHeader}>
+              <h2>MirAI Chat</h2>
+              <div className={styles.Menu}>
+                {/* Button với icon mic */}
+                <div
+                  className={styles.micButton}
+                  onClick={() => setIsTalking(!isTalking)}
+                >
+                  {isTalking ? (
+                    <i className="material-icons" style={{ cursor: 'pointer', userSelect: 'none' }}>volume_up</i>
+                  ) : (
+                    <i className="material-icons" style={{ cursor: 'pointer', userSelect: 'none' }}>volume_mute</i>
+                  )}
+                </div>
+                <div className={styles.userIcon}>
+                  {isGuest ? (
+                    <i className="material-icons" style={{ cursor: 'pointer', userSelect: 'none' }}>person</i>
+                  ) : (
+                    <i className="material-icons" style={{ cursor: 'pointer', userSelect: 'none' }}>person_outline</i>
+                  )}
+                </div>
+              </div>
+            </div>
+            <ChatBox onEmotionChange={setEmotion} isTalking={isTalking} />
           </div>
         </div>
-        <ChatBox onEmotionChange={setEmotion} isTalking={isTalking} />
-      </div>
+      ) : (
+        <LoginPage onLogin={handleLogin} onGuestLogin={handleGuestLogin} />
+      )}
     </main>
   );
 }
