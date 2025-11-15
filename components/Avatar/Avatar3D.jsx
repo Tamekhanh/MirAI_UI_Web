@@ -8,7 +8,7 @@ import * as VRMAnimation from "@pixiv/three-vrm-animation";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { useEffect, useRef, useState, Suspense, useCallback } from "react";
-import { compareBones } from "../lib/vrmBoneUtils";
+import { compareBones } from "../../lib/vrmBoneUtils";
 
 // Component AvatarModel (Không đổi, đã đúng)
 function AvatarModel({ emotion, onReady }) {

@@ -27,7 +27,7 @@ export default function ChatBox({ onEmotionChange, isTalking }) {
     setInput(""); // Xóa input ngay lập tức để UX tốt hơn
 
     try {
-      const res = await axios.post(`${SERVER_URL}/api/chat`, {
+      const res = await axios.post(`${SERVER_URL}/api/v1/chat`, {
         message: input,
         isTalking: isTalking,
       });

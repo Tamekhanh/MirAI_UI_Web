@@ -1,11 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
 import axios from "axios"; // Cần import axios ở đây
-import Avatar3D from "../components/Avatar3D";
+import Avatar3D from "../components/Avatar/Avatar3D";
 import ChatBox from "../components/ChatBox";
 import styles from "./Page.module.css";
-import Avatar2D from "../components/Avatar2D";
-import LoadingScreen from "../components/LoadingScreen"; // <-- 1. Import component mới
+import Avatar2D from "../components/Avatar/Avatar2D";
+import LoadingScreen from "../components/LoadingScreen/LoadingScreen"; // <-- 1. Import component mới
 
 import MiraiChat from "../components/MiraiChat";
 
@@ -49,7 +49,7 @@ export default function Page() {
       try {
         // Thử "ping" server. Giả sử server có 1 endpoint /api/health
         // Bạn cũng có thể dùng chính endpoint chat: "http://localhost:8000/api/chat"
-        await axios.get("http://localhost:8000/api/health", { timeout: 3000 }); // Đặt timeout 3 giây
+        await axios.get("http://localhost:8000/api/v1/health", { timeout: 3000 }); // Đặt timeout 3 giây
         
         // Server OK
         clearInterval(progressInterval); // Dừng giả lập
