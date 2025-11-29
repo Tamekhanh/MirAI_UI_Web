@@ -25,7 +25,7 @@ export default function MiraiChat({ setEmotion, isDebug }) {
       {isLoggedIn || isDebug ? (
         <div className={styles.MiraiChatContainer}>
           <div className={styles.avatarContainer}>
-            <Avatar2D />
+            <Avatar3D />
           </div>
           <div className={styles.chatContainer}>
             <div className={styles.chatHeader}>

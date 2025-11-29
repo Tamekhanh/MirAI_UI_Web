@@ -33,33 +33,20 @@ export default function ChatBox({ onEmotionChange, isTalking }) {
       });
       
       const reply = res.data.reply;
-      const audioFile = res.data.audio_file; // MỚI: Nhận file âm thanh
+      const audioFile = res.data.audio_file;
+      const emotion = res.data.emotion;
 
-      // 1. Phân tích cảm xúc
-      const emotion =
-        reply.includes("[smile]") ? "smile" :
-        reply.includes("[angry]") ? "angry" :
-        reply.includes("[curious]") ? "curious" : "neutral";
-      
-      // 2. Cập nhật cảm xúc cho Avatar
+      // 1. Cập nhật cảm xúc cho Avatar
       onEmotionChange(emotion);
-
-      // 3. Làm sạch tin nhắn (loại bỏ tag)
-      const cleanReply = reply.replace(/\[.*?\]/g, "").trim();
       
-      // 4. Cập nhật tin nhắn của bot
-      setMessages((prev) => [...prev, { role: "bot", content: cleanReply }]);
+      // 2. Cập nhật tin nhắn của bot (đã được làm sạch ở backend)
+      setMessages((prev) => [...prev, { role: "bot", content: reply }]);
 
-      // 5. MỚI: Phát file âm thanh
+      // 3. Phát file âm thanh nếu có và isTalking là true
       if (audioFile && isTalking) {
-        // Tạo URL đầy đủ để truy cập file âm thanh
         const audioUrl = `${SERVER_URL}${audioFile}`;
-        
-        // Tạo một đối tượng Audio và phát nó
         const audio = new Audio(audioUrl);
-        
         audio.play().catch(error => {
-          // Xử lý lỗi nếu trình duyệt chặn phát
           console.warn("Lỗi phát âm thanh:", error);
         });
       }

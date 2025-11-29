@@ -1,6 +1,6 @@
 // Avatar3D.jsx
 "use client";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useLoader } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
 // Import này vẫn đúng
@@ -8,30 +8,41 @@ import * as VRMAnimation from "@pixiv/three-vrm-animation";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { useEffect, useRef, useState, Suspense, useCallback } from "react";
+
+// IMPORT MỚI: Hàm so sánh bones
 import { compareBones } from "../../lib/vrmBoneUtils";
 
-// Component AvatarModel (Không đổi, đã đúng)
+// Component AvatarModel (Updated to use useLoader for preloading)
 function AvatarModel({ emotion, onReady }) {
+  const gltf = useLoader(GLTFLoader, "/Mirai_AI_model.vrm", (loader) => {
+    loader.register((parser) => new VRMLoaderPlugin(parser));
+  });
+  
   const [vrm, setVrm] = useState(null);
   const group = useRef();
   const mixerRef = useRef(null);
 
   useEffect(() => {
-    const loader = new GLTFLoader();
-    loader.register((parser) => new VRMLoaderPlugin(parser));
-    loader.load("/Mirai_AI_model.vrm", (gltf) => {
-      VRMUtils.combineSkeletons(gltf.scene);
-      const loadedVrm = gltf.userData.vrm;
-      VRMUtils.rotateVRM0(loadedVrm);
+    if (!gltf || !gltf.userData.vrm) return;
+    const loadedVrm = gltf.userData.vrm;
+
+    if (vrm !== loadedVrm) {
+      // Ensure we only setup the VRM once (since useLoader caches the result)
+      if (!loadedVrm.__isSetup) {
+        VRMUtils.combineSkeletons(gltf.scene);
+        VRMUtils.rotateVRM0(loadedVrm);
+        loadedVrm.__isSetup = true;
+      }
+      
       setVrm(loadedVrm);
       mixerRef.current = new THREE.AnimationMixer(loadedVrm.scene);
       if (onReady) onReady({ vrm: loadedVrm, mixer: mixerRef.current });
-    });
+    }
 
     return () => {
       if (mixerRef.current) mixerRef.current.stopAllAction();
     };
-  }, [onReady]);
+  }, [gltf, onReady, vrm]);
 
   useFrame((state, delta) => {
     if (vrm) {
@@ -48,13 +59,16 @@ function AvatarModel({ emotion, onReady }) {
   return vrm ? <primitive object={vrm.scene} ref={group} scale={1.2} /> : null;
 }
 
+// Preload the model
+useLoader.preload(GLTFLoader, "/Mirai_AI_model.vrm", (loader) => {
+  loader.register((parser) => new VRMLoaderPlugin(parser));
+});
+
 // Component chính
 export default function Avatar3D({ emotion }) {
   const [clips, setClips] = useState([]);
   const mixerRef = useRef(null);
   const vrmRef = useRef(null);
-  // Khởi tạo loaderRef. Chúng ta sẽ đăng ký plugin BÊN TRONG handleReady
-  const loaderRef = useRef(new GLTFLoader());
   
   const [compareResult, setCompareResult] = useState(null);
   const [comparing, setComparing] = useState(false);
@@ -74,33 +88,34 @@ export default function Avatar3D({ emotion }) {
   const handleReady = useCallback(({ vrm, mixer }) => {
     vrmRef.current = vrm;
     mixerRef.current = mixer;
-    const loader = loaderRef.current;
-
-    // **ĐÂY LÀ BƯỚC QUAN TRỌNG:**
-    // Chúng ta cần đăng ký CẢ HAI plugin cho loader animation
     
+    // Create a new loader instance to avoid plugin duplication and ensure clean state
+    const loader = new GLTFLoader();
+
     // 1. Plugin VRM (để loader hiểu file .vrm và .vrma)
-    // (Ghi chú: loader trong AvatarModel đã có cái này, nhưng loader này CŨNG cần)
     loader.register((parser) => new VRMLoaderPlugin(parser));
     
-    // 2. Plugin Animation (để nó TỰ ĐỘNG retarget)
-    // Chúng ta truyền `vrm` (model Mirai) vào làm mục tiêu
-    loader.register(
-      (parser) => new VRMAnimation.VRMAnimationLoaderPlugin(parser, { vrm: vrm })
-    );
+    // 2. Plugin Animation (để parse VRM Animation)
+    // KHÔNG truyền vrm vào đây, chúng ta sẽ retarget thủ công
+    loader.register((parser) => new VRMAnimation.VRMAnimationLoaderPlugin(parser));
 
-    // Bây giờ, chúng ta tải animation như bình thường
     const promises = animationFiles.map(({ file, name }) => {
       return new Promise((resolve, reject) => {
         loader.load(
           file,
           (gltf) => {
-            if (gltf && gltf.animations && gltf.animations.length) {
-              // clip này đã được `VRMAnimationLoaderPlugin` TỰ ĐỘNG retarget
-              const retargetedClip = gltf.animations[0];
-              
-              retargetedClip.name = name;
-              resolve({ name, clip: retargetedClip });
+            const vrmAnimations = gltf.userData.vrmAnimations;
+            if (vrmAnimations && vrmAnimations.length > 0) {
+              // Manually create the clip for the specific VRM
+              // This ensures the animation is correctly retargeted to the current VRM instance
+              const clip = VRMAnimation.createVRMAnimationClip(vrmAnimations[0], vrm);
+              clip.name = name;
+              resolve({ name, clip });
+            } else if (gltf.animations && gltf.animations.length) {
+              // Fallback for standard animations
+              const clip = gltf.animations[0];
+              clip.name = name;
+              resolve({ name, clip });
             } else {
               reject(new Error(`Không tìm thấy animation trong file: ${file}`));
             }
@@ -206,10 +221,10 @@ export default function Avatar3D({ emotion }) {
         <OrbitControls
           target={[0, 1.6, 0]}
           enablePan={false}
-          enableZoom={true}
+          enableZoom={false}
           distance={0.5}
           maxPolarAngle={Math.PI / 1.8}
-          enableRotate={true}
+          enableRotate={false}
         />
       </Canvas>
     </div>
