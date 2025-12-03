@@ -1,0 +1,5 @@
+.Canvas {
+  background: url('/Background.png');
+  background-size: cover;
+  background-position: center;
+}

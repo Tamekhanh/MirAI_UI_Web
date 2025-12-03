@@ -1,72 +1,22 @@
 // Avatar3D.jsx
 "use client";
-import { Canvas, useFrame, useLoader } from "@react-three/fiber";
+import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
-import { VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
-// Import này vẫn đúng
+import { VRMLoaderPlugin } from "@pixiv/three-vrm";
 import * as VRMAnimation from "@pixiv/three-vrm-animation";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import { useEffect, useRef, useState, Suspense, useCallback } from "react";
+import { useState, useRef, Suspense, useCallback } from "react";
 
-// IMPORT MỚI: Hàm so sánh bones
 import { compareBones } from "../../lib/vrmBoneUtils";
+import AvatarModel from "./Model/AvatarModel";
 
-// Component AvatarModel (Updated to use useLoader for preloading)
-function AvatarModel({ emotion, onReady }) {
-  const gltf = useLoader(GLTFLoader, "/Mirai_AI_model.vrm", (loader) => {
-    loader.register((parser) => new VRMLoaderPlugin(parser));
-  });
-  
-  const [vrm, setVrm] = useState(null);
-  const group = useRef();
-  const mixerRef = useRef(null);
-
-  useEffect(() => {
-    if (!gltf || !gltf.userData.vrm) return;
-    const loadedVrm = gltf.userData.vrm;
-
-    if (vrm !== loadedVrm) {
-      // Ensure we only setup the VRM once (since useLoader caches the result)
-      if (!loadedVrm.__isSetup) {
-        VRMUtils.combineSkeletons(gltf.scene);
-        VRMUtils.rotateVRM0(loadedVrm);
-        loadedVrm.__isSetup = true;
-      }
-      
-      setVrm(loadedVrm);
-      mixerRef.current = new THREE.AnimationMixer(loadedVrm.scene);
-      if (onReady) onReady({ vrm: loadedVrm, mixer: mixerRef.current });
-    }
-
-    return () => {
-      if (mixerRef.current) mixerRef.current.stopAllAction();
-    };
-  }, [gltf, onReady, vrm]);
-
-  useFrame((state, delta) => {
-    if (vrm) {
-      vrm.update(delta);
-      if (mixerRef.current) mixerRef.current.update(delta);
-      const proxy = vrm.blendShapeProxy;
-      if (proxy) {
-        proxy.setValue("Joy", THREE.MathUtils.lerp(proxy.getValue("Joy"), emotion === "smile" ? 0.8 : 0, delta * 10));
-        proxy.setValue("Angry", THREE.MathUtils.lerp(proxy.getValue("Angry"), emotion === "angry" ? 0.8 : 0, delta * 10));
-      }
-    }
-  });
-
-  return vrm ? <primitive object={vrm.scene} ref={group} scale={1.2} /> : null;
-}
-
-// Preload the model
-useLoader.preload(GLTFLoader, "/Mirai_AI_model.vrm", (loader) => {
-  loader.register((parser) => new VRMLoaderPlugin(parser));
-});
+import style from './Avatar3D.module.css';
 
 // Component chính
 export default function Avatar3D({ emotion }) {
   const [clips, setClips] = useState([]);
+  const [blendShapes, setBlendShapes] = useState({ A: 0, I: 0, U: 0, E: 0, O: 0 });
   const mixerRef = useRef(null);
   const vrmRef = useRef(null);
   
@@ -88,61 +38,63 @@ export default function Avatar3D({ emotion }) {
   const handleReady = useCallback(({ vrm, mixer }) => {
     vrmRef.current = vrm;
     mixerRef.current = mixer;
-    
-    // Create a new loader instance to avoid plugin duplication and ensure clean state
-    const loader = new GLTFLoader();
-
-    // 1. Plugin VRM (để loader hiểu file .vrm và .vrma)
-    loader.register((parser) => new VRMLoaderPlugin(parser));
-    
-    // 2. Plugin Animation (để parse VRM Animation)
-    // KHÔNG truyền vrm vào đây, chúng ta sẽ retarget thủ công
-    loader.register((parser) => new VRMAnimation.VRMAnimationLoaderPlugin(parser));
-
-    const promises = animationFiles.map(({ file, name }) => {
-      return new Promise((resolve, reject) => {
-        loader.load(
-          file,
-          (gltf) => {
-            const vrmAnimations = gltf.userData.vrmAnimations;
-            if (vrmAnimations && vrmAnimations.length > 0) {
-              // Manually create the clip for the specific VRM
-              // This ensures the animation is correctly retargeted to the current VRM instance
-              const clip = VRMAnimation.createVRMAnimationClip(vrmAnimations[0], vrm);
-              clip.name = name;
-              resolve({ name, clip });
-            } else if (gltf.animations && gltf.animations.length) {
-              // Fallback for standard animations
-              const clip = gltf.animations[0];
-              clip.name = name;
-              resolve({ name, clip });
-            } else {
-              reject(new Error(`Không tìm thấy animation trong file: ${file}`));
-            }
-          },
-          undefined,
-          (err) => reject(err)
-        );
-      });
-    });
-
-    Promise.all(promises)
-      .then((retargetedClips) => {
-        setClips(retargetedClips);
-      })
-      .catch((err) => {
-        console.warn("Lỗi khi load hoặc retarget animations:", err);
-      });
+    // Optimization: Animations are now loaded on-demand when clicked to reduce initial lag
   }, []); // useCallback dependency rỗng là OK
 
 
-  function playAnimation(name) {
-    const entry = clips.find((c) => c.name === name);
+  const [loadingAnim, setLoadingAnim] = useState(false);
+
+  function playAnimation(name, file) {
     const mixer = mixerRef.current;
-    if (!entry || !mixer) return;
+    const vrm = vrmRef.current;
+    if (!mixer || !vrm) return;
+
+    // 1. Check if clip is already loaded
+    const existingEntry = clips.find((c) => c.name === name);
+    if (existingEntry) {
+      playClipInternal(existingEntry.clip);
+      return;
+    }
+
+    // 2. Load if not exists
+    setLoadingAnim(true);
+    const loader = new GLTFLoader();
+    loader.register((parser) => new VRMLoaderPlugin(parser));
+    loader.register((parser) => new VRMAnimation.VRMAnimationLoaderPlugin(parser));
+
+    loader.load(
+      file,
+      (gltf) => {
+        const vrmAnimations = gltf.userData.vrmAnimations;
+        let clip = null;
+
+        if (vrmAnimations && vrmAnimations.length > 0) {
+          clip = VRMAnimation.createVRMAnimationClip(vrmAnimations[0], vrm);
+        } else if (gltf.animations && gltf.animations.length) {
+          clip = gltf.animations[0];
+        }
+
+        if (clip) {
+          clip.name = name;
+          setClips((prev) => [...prev, { name, clip }]);
+          playClipInternal(clip);
+        }
+        setLoadingAnim(false);
+      },
+      undefined,
+      (err) => {
+        console.warn("Error loading animation:", err);
+        setLoadingAnim(false);
+      }
+    );
+  }
+
+  function playClipInternal(clip) {
+    const mixer = mixerRef.current;
+    if (!mixer) return;
     try {
       mixer.stopAllAction();
-      const action = mixer.clipAction(entry.clip);
+      const action = mixer.clipAction(clip);
       action.reset();
       action.setLoop(THREE.LoopOnce, 0);
       action.clampWhenFinished = true;
@@ -181,42 +133,55 @@ export default function Avatar3D({ emotion }) {
       {/* Animation UI overlay (không đổi) */}
       <div style={{ position: "absolute", left: 8, top: 8, zIndex: 10 }}>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: 'center' }}>
-          {clips.length === 0 && <div style={{ padding: 6, background: "rgba(0,0,0,0.6)", color: "#fff" }}>Đang tải animations...</div>}
-          {clips.map((c) => (
+          {loadingAnim && <div style={{ padding: 6, background: "rgba(0,0,0,0.6)", color: "#fff" }}>Loading...</div>}
+          {animationFiles.map((anim) => (
             <button
-              key={c.name}
-              onClick={() => playAnimation(c.name)}
+              key={anim.name}
+              onClick={() => playAnimation(anim.name, anim.file)}
               style={{ padding: "6px 10px", background: "#111111ff", borderRadius: 6, border: "none", cursor: "pointer" }}
             >
-              {c.name}
+              {anim.name}
             </button>
           ))}
-          <button
-            onClick={handleCompareClick}
-            disabled={comparing}
-            title="Compare VRM bones with first animation file and download JSON"
-            style={{ padding: "6px 10px", background: "#2b6cb0", color: '#fff', borderRadius: 6, border: "none", cursor: "pointer" }}
-          >
-            {comparing ? 'Comparing...' : 'Compare Bones'}
-          </button>
         </div>
-        {compareResult && (
-          <div style={{ marginTop: 8, background: 'rgba(0,0,0,0.5)', padding: 8, borderRadius: 6, color: '#fff', maxWidth: 420 }}>
-            <div><strong>Compare result:</strong></div>
-            <div>VRM bones: {compareResult.vrmBones.length}</div>
-            <div>Animation nodes: {compareResult.animNodes.length}</div>
-            <div>Both: {compareResult.both.length}</div>
-            <div>Only in VRM: {compareResult.leftOnly.length}</div>
-            <div>Only in animation: {compareResult.rightOnly.length}</div>
-          </div>
-        )}
       </div>
 
-      <Canvas camera={{ position: [0, 1.5, 2.5], fov: 20 }}>
+      {/* BlendShape Sliders */}
+      <div style={{ position: "absolute", right: 8, top: 8, zIndex: 10, background: "rgba(0,0,0,0.6)", padding: 10, borderRadius: 8, color: "white", display: "flex", flexDirection: "column", gap: 4 }}>
+        <div style={{ marginBottom: 4, fontWeight: 'bold', fontSize: '0.9em' }}>Vowel Mouth Shapes</div>
+        {Object.keys(blendShapes).map((key) => (
+          <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ width: 15, fontWeight: 'bold' }}>{key}</span>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={blendShapes[key]}
+              onChange={(e) => setBlendShapes(prev => ({ ...prev, [key]: parseFloat(e.target.value) }))}
+              style={{ cursor: 'pointer' }}
+            />
+          </div>
+        ))}
+      </div>
+
+      <Canvas 
+        camera={{ position: [0, 1.5, 2.5], fov: 20 }} 
+        dpr={1} // Force 1x resolution to fix lag on high-DPI PC monitors
+        performance={{ min: 0.5, max: 1 }}
+        gl={{ 
+          antialias: false, 
+          powerPreference: "high-performance",
+          precision: "mediump",
+          depth: true,
+          stencil: false,
+          alpha: false 
+        }}
+      >
         <ambientLight intensity={0.8} />
         <directionalLight position={[1, 2, 3]} intensity={1.5} />
         <Suspense fallback={null}>
-          <AvatarModel emotion={emotion} onReady={handleReady} />
+          <AvatarModel emotion={emotion} blendShapes={blendShapes} onReady={handleReady} />
         </Suspense>
         <OrbitControls
           target={[0, 1.6, 0]}

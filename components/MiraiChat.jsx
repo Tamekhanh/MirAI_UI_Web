@@ -1,9 +1,7 @@
 //MiraiChat.jsx
 import { useState, useRef, useEffect } from "react";
-import axios from "axios";
 import ChatBox from "../components/ChatBox";
 import styles from "./MiraiChat.module.css";
-import Avatar2D from "./Avatar/Avatar2D";
 import LoginPage from "./LoginScreen/Login";
 import Avatar3D from "./Avatar/Avatar3D";
 

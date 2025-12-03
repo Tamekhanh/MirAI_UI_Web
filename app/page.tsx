@@ -1,10 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 import axios from "axios"; // Cần import axios ở đây
-import Avatar3D from "../components/Avatar/Avatar3D";
-import ChatBox from "../components/ChatBox";
-import styles from "./Page.module.css";
-import Avatar2D from "../components/Avatar/Avatar2D";
 import LoadingScreen from "../components/LoadingScreen/LoadingScreen"; // <-- 1. Import component mới
 
 import MiraiChat from "../components/MiraiChat";
