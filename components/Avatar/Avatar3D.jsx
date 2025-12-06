@@ -6,7 +6,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
 import * as VRMAnimation from "@pixiv/three-vrm-animation";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import { useState, useRef, Suspense, useCallback } from "react";
+import { useState, useRef, Suspense, useCallback, useEffect } from "react";
 
 import { compareBones } from "../../lib/vrmBoneUtils";
 import AvatarModel from "./Model/AvatarModel";
@@ -14,12 +14,105 @@ import AvatarModel from "./Model/AvatarModel";
 import style from './Avatar3D.module.css';
 
 // Component chính
-export default function Avatar3D({ emotion }) {
+export default function Avatar3D({ emotion, audioData }) {
   const [clips, setClips] = useState([]);
   const [blendShapes, setBlendShapes] = useState({ A: 0, I: 0, U: 0, E: 0, O: 0 });
   const mixerRef = useRef(null);
   const vrmRef = useRef(null);
   
+  // Audio & LipSync Refs
+  const audioRef = useRef(null);
+  const lipSyncDataRef = useRef(null);
+  const requestRef = useRef();
+  const lastShapeRef = useRef(null); // To avoid redundant state updates
+
+  useEffect(() => {
+    if (!audioData) return;
+
+    const { audioUrl, lipSyncUrl } = audioData;
+
+    // 1. Fetch Lip Sync Data
+    fetch(lipSyncUrl)
+      .then(res => res.json())
+      .then(data => {
+          lipSyncDataRef.current = data;
+          
+          // 2. Play Audio
+          if (audioRef.current) {
+              audioRef.current.pause();
+              audioRef.current = null;
+          }
+          const audio = new Audio(audioUrl);
+          audioRef.current = audio;
+          
+          audio.play().catch(e => console.error("Audio play error", e));
+          
+          // 3. Start Animation Loop
+          const animate = () => {
+              if (!audioRef.current || audioRef.current.paused || audioRef.current.ended) {
+                  // Reset mouth if stopped
+                  if (lastShapeRef.current !== 'X') {
+                    setBlendShapes({ A: 0, I: 0, U: 0, E: 0, O: 0 });
+                    lastShapeRef.current = 'X';
+                  }
+                  return;
+              }
+              
+              const currentTime = audioRef.current.currentTime;
+              updateMouth(currentTime);
+              requestRef.current = requestAnimationFrame(animate);
+          };
+          requestRef.current = requestAnimationFrame(animate);
+          
+          audio.onended = () => {
+              cancelAnimationFrame(requestRef.current);
+              setBlendShapes({ A: 0, I: 0, U: 0, E: 0, O: 0 });
+              lastShapeRef.current = 'X';
+          };
+      })
+      .catch(err => console.error("Failed to load lip sync", err));
+
+    return () => {
+        if (requestRef.current) cancelAnimationFrame(requestRef.current);
+        if (audioRef.current) audioRef.current.pause();
+    };
+  }, [audioData]);
+
+  const updateMouth = (currentTime) => {
+      if (!lipSyncDataRef.current || !lipSyncDataRef.current.mouthCues) return;
+      
+      const cues = lipSyncDataRef.current.mouthCues;
+      // Find current cue
+      const currentCue = cues.find(cue => currentTime >= cue.start && currentTime <= cue.end);
+      
+      if (currentCue) {
+          const shape = currentCue.value; // Object (e.g. {A: 0.8, E: 0.2}) or "X"
+          
+          // Check if shape changed (by reference is enough since it comes from the same JSON object)
+          if (lastShapeRef.current !== shape) {
+            const newShapes = { A: 0, I: 0, U: 0, E: 0, O: 0 };
+            
+            if (shape !== 'X' && typeof shape === 'object') {
+                // Merge shape weights into newShapes
+                Object.assign(newShapes, shape);
+            } else if (typeof shape === 'string' && shape !== 'X') {
+                // Backward compatibility for single string values
+                if (newShapes.hasOwnProperty(shape)) {
+                    newShapes[shape] = 1;
+                }
+            }
+            
+            setBlendShapes(newShapes);
+            lastShapeRef.current = shape;
+          }
+      } else {
+          if (lastShapeRef.current !== 'X') {
+            setBlendShapes({ A: 0, I: 0, U: 0, E: 0, O: 0 });
+            lastShapeRef.current = 'X';
+          }
+      }
+  };
+
   const [compareResult, setCompareResult] = useState(null);
   const [comparing, setComparing] = useState(false);
 
@@ -32,6 +125,7 @@ export default function Avatar3D({ emotion }) {
     { file: "/animations/VRMA_06.vrma", name: "VRMA_06" },
     { file: "/animations/VRMA_07.vrma", name: "VRMA_07" },
     { file: "/animations/VRMA_08.vrma", name: "VRMA_08" },
+    { file: "/animations/VRMA_09.vrma", name: "VRMA_09" },
   ];
 
   // *** TOÀN BỘ THAY ĐỔI NẰM Ở ĐÂY ***
@@ -39,6 +133,7 @@ export default function Avatar3D({ emotion }) {
     vrmRef.current = vrm;
     mixerRef.current = mixer;
     // Optimization: Animations are now loaded on-demand when clicked to reduce initial lag
+    playAnimation("VRMA_02", "/animations/VRMA_02.vrma");
   }, []); // useCallback dependency rỗng là OK
 
 

@@ -5,7 +5,6 @@
   height: 100vh;
   overflow: hidden; /* Ngăn cuộn trang chính */
   background: linear-gradient(180deg,#061022 0%, #071229 100%);
-  gap: 18px;
   align-items: stretch;
 }
 
@@ -15,7 +14,6 @@
 }
 
 .MiraiChatContainer {
-  padding: 18px;
   flex: 1; /* Chiếm toàn bộ không gian còn lại */
   display: flex;
 
@@ -49,7 +47,7 @@
 
 /* Media Query cho thiết bị di động (Mobile-first) */
 @media (max-width: 768px) {
-  .mainContainer {
+  .mainContainer, .MiraiChatContainer {
     flex-direction: column; /* Xếp chồng lên nhau */
   }
 

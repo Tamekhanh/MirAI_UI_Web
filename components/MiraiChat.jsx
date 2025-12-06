@@ -5,10 +5,11 @@ import styles from "./MiraiChat.module.css";
 import LoginPage from "./LoginScreen/Login";
 import Avatar3D from "./Avatar/Avatar3D";
 
-export default function MiraiChat({ setEmotion, isDebug }) {
+export default function MiraiChat({ emotion, setEmotion, isDebug }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isTalking, setIsTalking] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
+  const [audioData, setAudioData] = useState(null);
 
   const handleLogin = () => {
     setIsLoggedIn(true);
@@ -18,12 +19,16 @@ export default function MiraiChat({ setEmotion, isDebug }) {
     setIsGuest(true);
   };
 
+  const handleAudioPlay = (audioUrl, lipSyncUrl) => {
+    setAudioData({ audioUrl, lipSyncUrl });
+  };
+
   return (
     <main className={styles.mainContainer}>
       {isLoggedIn || isDebug ? (
         <div className={styles.MiraiChatContainer}>
           <div className={styles.avatarContainer}>
-            <Avatar3D />
+            <Avatar3D emotion={emotion} audioData={audioData} />
           </div>
           <div className={styles.chatContainer}>
             <div className={styles.chatHeader}>
@@ -49,7 +54,7 @@ export default function MiraiChat({ setEmotion, isDebug }) {
                 </div>
               </div>
             </div>
-            <ChatBox onEmotionChange={setEmotion} isTalking={isTalking} />
+            <ChatBox onEmotionChange={setEmotion} onAudioPlay={handleAudioPlay} isTalking={isTalking} />
           </div>
         </div>
       ) : (

@@ -6,7 +6,7 @@ import styles from "./ChatBox.module.css";
 // MỚI: Định nghĩa URL của server
 const SERVER_URL = "http://localhost:8000";
 
-export default function ChatBox({ onEmotionChange, isTalking }) {
+export default function ChatBox({ onEmotionChange, onAudioPlay, isTalking }) {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]);
   
@@ -45,10 +45,12 @@ export default function ChatBox({ onEmotionChange, isTalking }) {
       // 3. Phát file âm thanh nếu có và isTalking là true
       if (audioFile && isTalking) {
         const audioUrl = `${SERVER_URL}${audioFile}`;
-        const audio = new Audio(audioUrl);
-        audio.play().catch(error => {
-          console.warn("Lỗi phát âm thanh:", error);
-        });
+        // Construct lip sync URL (assuming .json extension)
+        const lipSyncUrl = audioUrl.replace(".mp3", ".json");
+        
+        if (onAudioPlay) {
+            onAudioPlay(audioUrl, lipSyncUrl);
+        }
       }
 
     } catch (error) {
